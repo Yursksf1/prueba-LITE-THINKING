@@ -203,6 +203,16 @@ Docker y Docker Compose se utilizan para proporcionar un entorno de desarrollo *
 docker compose up --build
 ```
 
+Alternativamente, puedes usar los siguientes comandos separados:
+```bash
+docker compose build
+docker compose up
+
+# ejecutar en background
+docker compose up -d
+```
+
+
 Este comando inicia:
 - Base de datos PostgreSQL
 - Backend en Django
