@@ -30,7 +30,6 @@ services:
   frontend:
     build: ./frontend
     container_name: lite_frontend
-    command: npm start
     env_file:
       - .env
     volumes:
