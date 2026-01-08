@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "lite-domain"
+version = "0.1.0"
+description = "Core domain for Lite Thinking technical test"
+authors = ["Yurley Sanchez <yurs.ksf1@gmail.com>"]
+packages = [{ include = "domain", from = "src" }]
+package-mode = true
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3"
