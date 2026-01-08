@@ -150,12 +150,44 @@ El proyecto utiliza **tres agentes principales** para garantizar calidad y coher
 - **Architecture Guardian Agent**
 - **Quality & Testing Agent**
 - **Security & Authentication Agent**
+- **Expert backend Agent**
+- **Expert frontend Agent**
 
 Se limita intencionalmente el número de agentes para evitar complejidad artificial y fragmentación excesiva, un problema común en enfoques automatizados o guiados por IA.
 
 ---
 
 ## 🚀 Ejecución del Proyecto con Docker (Recomendado)
+1) crear un archivo `.env` en la raíz del proyecto con las variables de entorno necesarias puedes basarte en el archivo `.env.example`
+```
+# =========================
+# DATABASE
+# =========================
+POSTGRES_DB=lite_db
+POSTGRES_USER=lite_user
+POSTGRES_PASSWORD=super_password_segura
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+
+DATABASE_URL=postgres://lite_user:super_password_segura@db:5432/lite_db
+
+# =========================
+# DJANGO
+# =========================
+DJANGO_SECRET_KEY=django-super-secret-key
+DJANGO_DEBUG=True
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+
+# =========================
+# BACKEND
+# =========================
+BACKEND_PORT=8000
+
+# =========================
+# FRONTEND
+# =========================
+REACT_APP_API_URL=http://localhost:8000
+```
 
 Docker y Docker Compose se utilizan para proporcionar un entorno de desarrollo **rápido, reproducible y consistente**, facilitando el trabajo local y la evaluación del proyecto.
 
