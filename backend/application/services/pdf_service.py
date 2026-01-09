@@ -7,7 +7,7 @@ separating the PDF generation logic from the HTTP layer.
 from io import BytesIO
 from datetime import datetime
 from typing import List, Optional
-from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer

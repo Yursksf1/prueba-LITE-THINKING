@@ -87,7 +87,10 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Use SQLite for tests, PostgreSQL for development/production
 import sys
-if 'test' in sys.argv:
+# Detect test environment using multiple signals
+TESTING = 'test' in sys.argv or 'pytest' in sys.modules or os.environ.get('TESTING', 'False') == 'True'
+
+if TESTING:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
