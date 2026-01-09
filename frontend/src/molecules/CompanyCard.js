@@ -1,11 +1,17 @@
+import { useNavigate } from 'react-router-dom';
 import Card from '../atoms/Card';
 import Button from '../atoms/Button';
 import { authService } from '../services/api';
 import './CompanyCard.css';
 
 function CompanyCard({ company, onEdit, onDelete }) {
+  const navigate = useNavigate();
   const currentUser = authService.getCurrentUser();
   const isAdmin = currentUser?.role === 'ADMINISTRATOR';
+
+  const handleViewProducts = () => {
+    navigate(`/companies/${company.nit}/products`);
+  };
 
   return (
     <Card className="company-card">
@@ -16,22 +22,31 @@ function CompanyCard({ company, onEdit, onDelete }) {
         <p><strong>Teléfono:</strong> {company.phone}</p>
       </div>
       
-      {isAdmin && (
-        <div className="company-actions">
-          <Button 
-            variant="primary" 
-            onClick={() => onEdit(company)}
-          >
-            Editar
-          </Button>
-          <Button 
-            variant="danger" 
-            onClick={() => onDelete(company)}
-          >
-            Eliminar
-          </Button>
-        </div>
-      )}
+      <div className="company-actions">
+        <Button 
+          variant="secondary" 
+          onClick={handleViewProducts}
+        >
+          Ver Productos
+        </Button>
+        
+        {isAdmin && (
+          <>
+            <Button 
+              variant="primary" 
+              onClick={() => onEdit(company)}
+            >
+              Editar
+            </Button>
+            <Button 
+              variant="danger" 
+              onClick={() => onDelete(company)}
+            >
+              Eliminar
+            </Button>
+          </>
+        )}
+      </div>
     </Card>
   );
 }
