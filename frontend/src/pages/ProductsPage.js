@@ -39,13 +39,22 @@ function ProductsPage() {
     navigate('/companies');
   };
 
+  const handleViewInventory = () => {
+    navigate(`/companies/${nit}/inventory`);
+  };
+
   return (
     <MainLayout>
       <div className="products-page">
         <div className="page-header">
-          <Button variant="secondary" onClick={handleBackClick}>
-            ← Volver a Empresas
-          </Button>
+          <div className="header-actions">
+            <Button variant="secondary" onClick={handleBackClick}>
+              ← Volver a Empresas
+            </Button>
+            <Button variant="primary" onClick={handleViewInventory}>
+              📦 Ver Inventario
+            </Button>
+          </div>
         </div>
 
         {loading ? (

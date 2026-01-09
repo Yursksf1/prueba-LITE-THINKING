@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LoginPage from './pages/LoginPage';
 import CompaniesPage from './pages/CompaniesPage';
 import ProductsPage from './pages/ProductsPage';
+import InventoryPage from './pages/InventoryPage';
 import ProtectedRoute from './utils/ProtectedRoute';
 import { authService } from './services/api';
 import './App.css';
@@ -24,6 +25,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ProductsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/companies/:nit/inventory" 
+          element={
+            <ProtectedRoute>
+              <InventoryPage />
             </ProtectedRoute>
           } 
         />

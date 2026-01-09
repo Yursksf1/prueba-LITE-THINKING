@@ -8,6 +8,12 @@
   margin-bottom: 2rem;
 }
 
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 .products-page .loading {
   text-align: center;
   padding: 3rem;
