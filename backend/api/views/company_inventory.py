@@ -9,6 +9,7 @@ Implements endpoints for inventory management per company:
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from django.http import HttpResponse
 
 from api.permissions import IsAdministratorOrReadOnly
@@ -141,7 +142,7 @@ def company_inventory_pdf_view(request, nit):
 
 
 @api_view(['POST'])
-@permission_classes([IsAdministratorOrReadOnly])
+@permission_classes([IsAuthenticated])
 def company_inventory_send_email_view(request, nit):
     """
     Send inventory PDF via email for a specific company.
@@ -149,8 +150,7 @@ def company_inventory_send_email_view(request, nit):
     POST /api/v1/companies/{nit}/inventory/send-email/
     
     Permissions:
-    - Administrator: Full access
-    - External: Can send emails (read-only equivalent for this action)
+    - All authenticated users (both Administrator and External) can send emails
     
     Request Body:
     {
