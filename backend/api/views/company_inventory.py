@@ -15,7 +15,7 @@ from django.http import HttpResponse
 from api.permissions import IsAdministratorOrReadOnly
 from api.serializers.inventory import SendEmailSerializer, CreateInventorySerializer
 from infrastructure.models import InventoryItem, Company, Product
-from application.services import PDFGeneratorService, EmailService
+from application.services import PDFGeneratorService, EmailService, AIRecommendationsService
 
 import logging
 
@@ -159,7 +159,10 @@ def company_inventory_pdf_view(request, nit):
     """
     Download inventory PDF for a specific company.
     
-    GET /api/v1/companies/{nit}/inventory/pdf/
+    GET /api/v1/companies/{nit}/inventory/pdf/?include_ai_recommendations=true
+    
+    Query Parameters:
+    - include_ai_recommendations (optional): 'true' to include AI-generated recommendations
     
     Permissions:
     - Administrator: Full access
@@ -180,6 +183,9 @@ def company_inventory_pdf_view(request, nit):
             status=status.HTTP_404_NOT_FOUND
         )
     
+    # Get the include_ai_recommendations query parameter
+    include_ai_recommendations = request.query_params.get('include_ai_recommendations', 'false').lower() == 'true'
+    
     # Get inventory items with related data
     inventory_items = InventoryItem.objects.filter(
         company=company
@@ -195,13 +201,24 @@ def company_inventory_pdf_view(request, nit):
             'prices': item.product.prices
         })
     
+    # Generate AI recommendations if requested
+    ai_recommendations = None
+    if include_ai_recommendations:
+        logger.info(f"AI recommendations requested for company {nit}")
+        ai_service = AIRecommendationsService()
+        ai_recommendations = ai_service.generate_recommendations(
+            inventory_items=items_data,
+            company_name=company.name
+        )
+    
     try:
         # Generate PDF
         pdf_service = PDFGeneratorService()
         pdf_buffer = pdf_service.generate_inventory_pdf(
             inventory_items=items_data,
             company_name=company.name,
-            company_nit=company.nit
+            company_nit=company.nit,
+            ai_recommendations=ai_recommendations
         )
         
         # Create HTTP response with PDF
@@ -232,7 +249,8 @@ def company_inventory_send_email_view(request, nit):
     
     Request Body:
     {
-        "email": "recipient@example.com"
+        "email": "recipient@example.com",
+        "include_ai_recommendations": true  // optional, defaults to false
     }
     
     Response:
@@ -261,6 +279,11 @@ def company_inventory_send_email_view(request, nit):
     
     recipient_email = serializer.validated_data['email']
     
+    # Get the include_ai_recommendations flag from request body (optional)
+    include_ai_recommendations = request.data.get('include_ai_recommendations', False)
+    if isinstance(include_ai_recommendations, str):
+        include_ai_recommendations = include_ai_recommendations.lower() == 'true'
+    
     # Get inventory items with related data
     inventory_items = InventoryItem.objects.filter(
         company=company
@@ -276,13 +299,24 @@ def company_inventory_send_email_view(request, nit):
             'prices': item.product.prices
         })
     
+    # Generate AI recommendations if requested
+    ai_recommendations = None
+    if include_ai_recommendations:
+        logger.info(f"AI recommendations requested for email to {recipient_email}")
+        ai_service = AIRecommendationsService()
+        ai_recommendations = ai_service.generate_recommendations(
+            inventory_items=items_data,
+            company_name=company.name
+        )
+    
     try:
         # Generate PDF
         pdf_service = PDFGeneratorService()
         pdf_buffer = pdf_service.generate_inventory_pdf(
             inventory_items=items_data,
             company_name=company.name,
-            company_nit=company.nit
+            company_nit=company.nit,
+            ai_recommendations=ai_recommendations
         )
         
         # Send email

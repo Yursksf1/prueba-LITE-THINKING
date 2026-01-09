@@ -37,7 +37,8 @@ class PDFGeneratorService:
         self, 
         inventory_items: List[dict],
         company_name: Optional[str] = None,
-        company_nit: Optional[str] = None
+        company_nit: Optional[str] = None,
+        ai_recommendations: Optional[str] = None
     ) -> BytesIO:
         """
         Generate a PDF report for inventory items.
@@ -46,6 +47,7 @@ class PDFGeneratorService:
             inventory_items: List of inventory items with product and quantity info
             company_name: Optional company name for the report header
             company_nit: Optional company NIT for the report header
+            ai_recommendations: Optional AI-generated recommendations text to include
             
         Returns:
             BytesIO: PDF document in memory
@@ -63,7 +65,8 @@ class PDFGeneratorService:
             >>> pdf_buffer = pdf_service.generate_inventory_pdf(
             ...     items, 
             ...     company_name='Acme Corp',
-            ...     company_nit='123456789'
+            ...     company_nit='123456789',
+            ...     ai_recommendations='Considere reabastecer los siguientes productos...'
             ... )
         """
         # Create a BytesIO buffer to hold the PDF in memory
@@ -213,6 +216,50 @@ class PDFGeneratorService:
             footer_style
         )
         elements.append(footer)
+        
+        # Add AI recommendations section if provided
+        if ai_recommendations:
+            elements.append(Spacer(1, 0.4*inch))
+            
+            # Add section title
+            recommendations_title_style = ParagraphStyle(
+                'RecommendationsTitle',
+                parent=self.styles['Heading2'],
+                fontSize=16,
+                textColor=colors.HexColor('#2b6cb0'),
+                spaceAfter=15,
+                alignment=TA_LEFT
+            )
+            recommendations_title = Paragraph("Recomendaciones", recommendations_title_style)
+            elements.append(recommendations_title)
+            
+            # Add a separator line
+            from reportlab.platypus import HRFlowable
+            line = HRFlowable(
+                width="100%",
+                thickness=1,
+                color=colors.HexColor('#cbd5e0'),
+                spaceAfter=10
+            )
+            elements.append(line)
+            
+            # Add recommendations content
+            recommendations_style = ParagraphStyle(
+                'RecommendationsContent',
+                parent=self.styles['Normal'],
+                fontSize=11,
+                textColor=colors.HexColor('#2d3748'),
+                spaceAfter=10,
+                alignment=TA_LEFT,
+                leading=14
+            )
+            
+            # Split recommendations into paragraphs if they contain line breaks
+            recommendation_paragraphs = ai_recommendations.split('\n')
+            for para_text in recommendation_paragraphs:
+                if para_text.strip():
+                    para = Paragraph(para_text.strip(), recommendations_style)
+                    elements.append(para)
         
         # Build PDF
         doc.build(elements)
