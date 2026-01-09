@@ -96,4 +96,26 @@ export const productService = {
   }
 };
 
+export const inventoryService = {
+  getByCompany: async (nit) => {
+    const response = await api.get(`/inventory/?company_nit=${nit}`);
+    return response.data;
+  },
+  
+  downloadPdf: async (nit) => {
+    const response = await api.get(`/inventory/pdf/?company_nit=${nit}`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  },
+  
+  sendEmail: async (nit, email) => {
+    const response = await api.post('/inventory/send-email/', {
+      email,
+      company_nit: nit
+    });
+    return response.data;
+  }
+};
+
 export default api;
