@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import MainLayout from '../templates/MainLayout';
 import ProductList from '../organisms/ProductList';
 import Button from '../atoms/Button';
@@ -13,11 +13,7 @@ function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    loadCompany();
-  }, [nit]);
-
-  const loadCompany = async () => {
+  const loadCompany = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -33,7 +29,11 @@ function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [nit]);
+
+  useEffect(() => {
+    loadCompany();
+  }, [loadCompany]);
 
   const handleBackClick = () => {
     navigate('/companies');

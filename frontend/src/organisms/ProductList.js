@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ProductCard from '../molecules/ProductCard';
 import ProductForm from '../molecules/ProductForm';
 import Modal from '../atoms/Modal';
@@ -16,11 +16,7 @@ function ProductList({ companyNit, companyName }) {
   const currentUser = authService.getCurrentUser();
   const isAdmin = currentUser?.role === 'ADMINISTRATOR';
 
-  useEffect(() => {
-    loadProducts();
-  }, [companyNit]);
-
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -38,7 +34,11 @@ function ProductList({ companyNit, companyName }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [companyNit]);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   const handleCreateClick = () => {
     setIsFormModalOpen(true);
