@@ -3,6 +3,11 @@ from rest_framework import serializers
 from infrastructure.models import Product
 
 
+# Valid currency codes - should match domain.entities.currency.Currency enum
+# This is maintained at the API layer but references domain concepts
+VALID_CURRENCIES = ['USD', 'EUR', 'COP']
+
+
 class ProductSerializer(serializers.ModelSerializer):
     """Serializer for Product model."""
     
@@ -67,7 +72,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         
         Validates:
         - Prices is a non-empty dictionary
-        - Each currency code is valid (USD, EUR, COP)
+        - Each currency code is valid (references domain Currency enum)
         - Each price has 'amount' and 'currency' fields
         - Amount is a positive number
         - Currency matches the key
@@ -77,9 +82,6 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         
         if not isinstance(value, dict):
             raise serializers.ValidationError("Prices must be a dictionary with currency codes as keys")
-        
-        # Valid currencies from domain layer
-        VALID_CURRENCIES = ['USD', 'EUR', 'COP']
         
         validated_prices = {}
         for currency_code, price_data in value.items():
@@ -126,9 +128,9 @@ class ProductCreateSerializer(serializers.ModelSerializer):
                     f"Amount for {currency_upper} must be greater than zero"
                 )
             
-            # Store validated price
+            # Store validated price - keep as Decimal string for precision
             validated_prices[currency_upper] = {
-                'amount': float(amount),
+                'amount': str(amount),
                 'currency': currency_upper
             }
         
