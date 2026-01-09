@@ -74,8 +74,7 @@ def product_list_view(request, nit):
     elif request.method == 'POST':
         serializer = ProductCreateSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(company=company)
-            product = Product.objects.get(code=serializer.data['code'])
+            product = serializer.save(company=company)
             response_serializer = ProductSerializer(product)
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

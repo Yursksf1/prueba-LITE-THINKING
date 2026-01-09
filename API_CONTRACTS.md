@@ -417,7 +417,7 @@ Crear producto para una empresa específica.
 
 ## 📊 Inventario
 
-### GET /api/v1/inventory
+### GET /api/v1/inventory/
 
 Listar items del inventario, opcionalmente filtrado por empresa.
 
@@ -428,8 +428,8 @@ Listar items del inventario, opcionalmente filtrado por empresa.
 
 **Ejemplos:**
 ```
-GET /api/v1/inventory
-GET /api/v1/inventory?company_nit=123456789
+GET /api/v1/inventory/
+GET /api/v1/inventory/?company_nit=123456789
 ```
 
 **Response 200 OK:**
@@ -467,7 +467,7 @@ GET /api/v1/inventory?company_nit=123456789
 
 ---
 
-### GET /api/v1/inventory/pdf
+### GET /api/v1/inventory/pdf/
 
 Descargar reporte de inventario en formato PDF.
 
@@ -478,8 +478,8 @@ Descargar reporte de inventario en formato PDF.
 
 **Ejemplos:**
 ```
-GET /api/v1/inventory/pdf
-GET /api/v1/inventory/pdf?company_nit=123456789
+GET /api/v1/inventory/pdf/
+GET /api/v1/inventory/pdf/?company_nit=123456789
 ```
 
 **Response 200 OK:**
@@ -497,7 +497,7 @@ GET /api/v1/inventory/pdf?company_nit=123456789
 
 ---
 
-### POST /api/v1/inventory/send-email
+### POST /api/v1/inventory/send-email/
 
 Enviar reporte de inventario por correo electrónico.
 

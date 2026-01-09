@@ -7,6 +7,6 @@ from api.views.inventory import (
 
 urlpatterns = [
     path('', inventory_list_view, name='inventory-list'),
-    path('pdf', inventory_pdf_view, name='inventory-pdf'),
-    path('send-email', inventory_send_email_view, name='inventory-send-email'),
+    path('pdf/', inventory_pdf_view, name='inventory-pdf'),
+    path('send-email/', inventory_send_email_view, name='inventory-send-email'),
 ]
