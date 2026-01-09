@@ -6,6 +6,7 @@ class Product(models.Model):
     
     code = models.CharField(max_length=100, primary_key=True, verbose_name='Product Code')
     name = models.CharField(max_length=255, verbose_name='Product Name')
+    # Django handles mutable defaults (list, dict) correctly in JSONField
     features = models.JSONField(default=list, verbose_name='Features')
     prices = models.JSONField(default=dict, verbose_name='Prices by Currency')
     company = models.ForeignKey(

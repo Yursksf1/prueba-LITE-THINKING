@@ -78,6 +78,7 @@ def inventory_pdf_view(request):
     if company_nit:
         try:
             company = Company.objects.get(nit=company_nit)
+            # select_related optimization to reduce DB queries
             inventory_items = InventoryItem.objects.filter(company=company).select_related('company', 'product')
             filename = f"inventory_{company_nit}.pdf"
         except Company.DoesNotExist:
@@ -86,11 +87,14 @@ def inventory_pdf_view(request):
                 status=status.HTTP_404_NOT_FOUND
             )
     else:
+        # select_related optimization to reduce DB queries
+        # Note: For production with large datasets, consider adding pagination
         inventory_items = InventoryItem.objects.all().select_related('company', 'product')
         filename = "inventory_all.pdf"
     
     # Placeholder PDF generation
-    # In production, use a proper PDF library
+    # TODO: In production, use a proper PDF library (ReportLab, WeasyPrint)
+    # and change content_type to 'application/pdf'
     pdf_content = "PDF PLACEHOLDER\n\n"
     pdf_content += "INVENTORY REPORT\n"
     pdf_content += "=" * 50 + "\n\n"
@@ -101,7 +105,8 @@ def inventory_pdf_view(request):
         pdf_content += f"Quantity: {item.quantity}\n"
         pdf_content += "-" * 50 + "\n"
     
-    response = HttpResponse(pdf_content, content_type='application/pdf')
+    # Using text/plain for placeholder; will be application/pdf in production
+    response = HttpResponse(pdf_content, content_type='text/plain')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
 
