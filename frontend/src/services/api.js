@@ -102,6 +102,11 @@ export const inventoryService = {
     return response.data;
   },
   
+  create: async (nit, inventoryData) => {
+    const response = await api.post(`/companies/${nit}/inventory/`, inventoryData);
+    return response.data;
+  },
+  
   downloadPdf: async (nit) => {
     const response = await api.get(`/companies/${nit}/inventory/pdf/`, {
       responseType: 'blob'
