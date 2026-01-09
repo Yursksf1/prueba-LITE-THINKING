@@ -6,14 +6,25 @@ Implements endpoints for inventory management per company:
 - GET /companies/{nit}/inventory/pdf/ - Download PDF for company inventory
 - POST /companies/{nit}/inventory/send-email/ - Send PDF by email
 """
+import sys
+import os
+
+# Add domain package to Python path
+domain_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'domain', 'src')
+if domain_path not in sys.path:
+    sys.path.insert(0, domain_path)
+
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.http import HttpResponse
 
+from domain.exceptions.errors import InvalidInventoryError, InvalidCompanyError, InvalidProductError
+
 from api.permissions import IsAdministratorOrReadOnly
 from api.serializers.inventory import SendEmailSerializer, CreateInventorySerializer
+from application.use_cases import AddInventoryUseCase
 from infrastructure.models import InventoryItem, Company, Product
 from application.services import PDFGeneratorService, EmailService, AIRecommendationsService
 
@@ -108,49 +119,51 @@ def company_inventory_list_view(request, nit):
     product_code = serializer.validated_data['product_code']
     quantity = serializer.validated_data['quantity']
     
-    # Validate product exists
     try:
-        product = Product.objects.get(code=product_code)
-    except Product.DoesNotExist:
+        # Use domain-driven use case for inventory management
+        use_case = AddInventoryUseCase()
+        inventory_item = use_case.execute(
+            company_nit=nit,
+            product_code=product_code,
+            quantity=quantity
+        )
+        
+        logger.info(f"Inventory item created: {nit} - {product_code} - Quantity: {quantity}")
+        
+        # Return response in the same format as the list endpoint
         return Response(
-            {'detail': 'Product not found'},
+            {
+                'product_code': inventory_item.product.code,
+                'product_name': inventory_item.product.name,
+                'quantity': inventory_item.quantity,
+                'prices': inventory_item.product.prices,
+                'updated_at': inventory_item.updated_at.isoformat()
+            },
+            status=status.HTTP_201_CREATED
+        )
+    except InvalidCompanyError as e:
+        return Response(
+            {'detail': str(e)},
             status=status.HTTP_404_NOT_FOUND
         )
-    
-    # Validate product belongs to the company
-    if product.company.nit != company.nit:
+    except InvalidProductError as e:
         return Response(
-            {'detail': 'Product does not belong to this company'},
+            {'detail': str(e)},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
-    # Check if inventory item already exists
-    if InventoryItem.objects.filter(company=company, product=product).exists():
+    except InvalidInventoryError as e:
+        # This includes the case where inventory item already exists
+        if "already exists" in str(e).lower() or InventoryItem.objects.filter(
+            company__nit=nit, product__code=product_code
+        ).exists():
+            return Response(
+                {'detail': 'Inventory item already exists for this product and company'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         return Response(
-            {'detail': 'Inventory item already exists for this product and company'},
+            {'detail': str(e)},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
-    # Create inventory item
-    inventory_item = InventoryItem.objects.create(
-        company=company,
-        product=product,
-        quantity=quantity
-    )
-    
-    logger.info(f"Inventory item created: {company.nit} - {product.code} - Quantity: {quantity}")
-    
-    # Return response in the same format as the list endpoint
-    return Response(
-        {
-            'product_code': inventory_item.product.code,
-            'product_name': inventory_item.product.name,
-            'quantity': inventory_item.quantity,
-            'prices': inventory_item.product.prices,
-            'updated_at': inventory_item.updated_at.isoformat()
-        },
-        status=status.HTTP_201_CREATED
-    )
 
 
 @api_view(['GET'])

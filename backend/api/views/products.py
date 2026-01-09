@@ -1,9 +1,20 @@
+import sys
+import os
+
+# Add domain package to Python path
+domain_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'domain', 'src')
+if domain_path not in sys.path:
+    sys.path.insert(0, domain_path)
+
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
+from domain.exceptions.errors import InvalidProductError, InvalidCompanyError, InvalidPriceError
+
 from api.permissions import IsAdministratorOrReadOnly
 from api.serializers.product import ProductSerializer, ProductCreateSerializer, ProductListSerializer
+from application.use_cases import RegisterProductUseCase
 from infrastructure.models import Product, Company
 
 
@@ -74,7 +85,21 @@ def product_list_view(request, nit):
     elif request.method == 'POST':
         serializer = ProductCreateSerializer(data=request.data)
         if serializer.is_valid():
-            product = serializer.save(company=company)
-            response_serializer = ProductSerializer(product)
-            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+            try:
+                # Use domain-driven use case for product registration
+                use_case = RegisterProductUseCase()
+                product = use_case.execute(
+                    code=serializer.validated_data['code'],
+                    name=serializer.validated_data['name'],
+                    features=serializer.validated_data.get('features', []),
+                    prices=serializer.validated_data['prices'],
+                    company_nit=nit
+                )
+                response_serializer = ProductSerializer(product)
+                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+            except (InvalidProductError, InvalidCompanyError, InvalidPriceError) as e:
+                return Response(
+                    {'detail': str(e)},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

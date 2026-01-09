@@ -1,9 +1,20 @@
+import sys
+import os
+
+# Add domain package to Python path
+domain_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'domain', 'src')
+if domain_path not in sys.path:
+    sys.path.insert(0, domain_path)
+
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
+from domain.exceptions.errors import InvalidCompanyError
+
 from api.permissions import IsAdministratorOrReadOnly
 from api.serializers.company import CompanySerializer, CompanyListSerializer
+from application.use_cases import RegisterCompanyUseCase, UpdateCompanyUseCase
 from infrastructure.models import Company
 
 
@@ -57,8 +68,22 @@ def company_list_view(request):
     elif request.method == 'POST':
         serializer = CompanySerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            try:
+                # Use domain-driven use case for company registration
+                use_case = RegisterCompanyUseCase()
+                company = use_case.execute(
+                    nit=serializer.validated_data['nit'],
+                    name=serializer.validated_data['name'],
+                    address=serializer.validated_data['address'],
+                    phone=serializer.validated_data['phone']
+                )
+                response_serializer = CompanySerializer(company)
+                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+            except InvalidCompanyError as e:
+                return Response(
+                    {'detail': str(e)},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -110,8 +135,22 @@ def company_detail_view(request, nit):
     elif request.method == 'PUT':
         serializer = CompanySerializer(company, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            try:
+                # Use domain-driven use case for company update
+                use_case = UpdateCompanyUseCase()
+                updated_company = use_case.execute(
+                    nit=nit,
+                    name=serializer.validated_data.get('name'),
+                    address=serializer.validated_data.get('address'),
+                    phone=serializer.validated_data.get('phone')
+                )
+                response_serializer = CompanySerializer(updated_company)
+                return Response(response_serializer.data, status=status.HTTP_200_OK)
+            except InvalidCompanyError as e:
+                return Response(
+                    {'detail': str(e)},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     elif request.method == 'DELETE':
