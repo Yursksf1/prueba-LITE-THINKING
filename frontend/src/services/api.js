@@ -107,20 +107,22 @@ export const inventoryService = {
     return response.data;
   },
   
-  downloadPdf: async (nit) => {
-    const response = await api.get(`/companies/${nit}/inventory/pdf/`, {
-      responseType: 'blob'
-    });
-    return response.data;
-  },
+    downloadPdf: async (nit, includeAIRecommendations = false) => {
+      const response = await api.get(`/companies/${nit}/inventory/pdf/`, {
+        responseType: 'blob',
+        params: { include_ai_recommendations: includeAIRecommendations }
+      });
+      return response.data;
+    },
   
-  sendEmail: async (nit, email) => {
-    const response = await api.post(`/companies/${nit}/inventory/send-email/`, {
-      email,
-      company_nit: nit
-    });
-    return response.data;
-  }
+    sendEmail: async (nit, email, includeAIRecommendations = false) => {
+      const response = await api.post(`/companies/${nit}/inventory/send-email/`, {
+        email,
+        company_nit: nit,
+        include_ai_recommendations: includeAIRecommendations
+      });
+      return response.data;
+    }
 };
 
 export default api;

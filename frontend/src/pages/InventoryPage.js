@@ -22,6 +22,7 @@ function InventoryPage() {
   const [emailError, setEmailError] = useState(null);
   const [emailSuccess, setEmailSuccess] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState(false);
+  const [includeAIRecommendations, setIncludeAIRecommendations] = useState(false);
   
   // Create inventory form state
   const [createForm, setCreateForm] = useState({
@@ -73,9 +74,10 @@ function InventoryPage() {
     try {
       setDownloadLoading(true);
       setError(null);
-      
-      const blob = await inventoryService.downloadPdf(nit);
-      
+
+      // Modifica el servicio para aceptar el parámetro
+      const blob = await inventoryService.downloadPdf(nit, includeAIRecommendations);
+
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -102,26 +104,26 @@ function InventoryPage() {
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!email) {
       setEmailError('El correo electrónico es requerido.');
       return;
     }
-    
+
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setEmailError('Por favor ingrese un correo electrónico válido.');
       return;
     }
-    
+
     try {
       setEmailLoading(true);
       setEmailError(null);
-      
-      await inventoryService.sendEmail(nit, email);
+
+      await inventoryService.sendEmail(nit, email, includeAIRecommendations);
       setEmailSuccess(true);
-      
+
       setTimeout(() => {
         setIsEmailModalOpen(false);
         setEmailSuccess(false);
@@ -267,24 +269,35 @@ function InventoryPage() {
                 <h1 className="page-title">Inventario</h1>
                 <p className="page-subtitle">{company?.name}</p>
               </div>
-              
+
               {isAdmin && (
                 <div className="inventory-actions">
-                  <Button 
-                    variant="primary" 
+                  <Button
+                    variant="primary"
                     onClick={handleCreateClick}
                   >
                     ➕ Agregar Producto
                   </Button>
-                  <Button 
-                    variant="primary" 
-                    onClick={handleDownloadPdf}
-                    disabled={downloadLoading}
-                  >
-                    {downloadLoading ? 'Descargando...' : '📥 Descargar PDF'}
-                  </Button>
-                  <Button 
-                    variant="primary" 
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Button
+                      variant="primary"
+                      onClick={handleDownloadPdf}
+                      disabled={downloadLoading}
+                    >
+                      {downloadLoading ? 'Descargando...' : '📥 Descargar PDF'}
+                    </Button>
+                    <label style={{ fontSize: '0.95rem', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={includeAIRecommendations}
+                        onChange={e => setIncludeAIRecommendations(e.target.checked)}
+                        style={{ marginRight: '0.3rem' }}
+                      />
+                      Incluir recomendaciones AI
+                    </label>
+                  </div>
+                  <Button
+                    variant="primary"
                     onClick={handleSendEmailClick}
                   >
                     📧 Enviar PDF
@@ -340,10 +353,20 @@ function InventoryPage() {
               required
               disabled={emailLoading || emailSuccess}
             />
-            
+
+            <label style={{ fontSize: '0.95rem', display: 'flex', alignItems: 'center', margin: '0.5rem 0', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={includeAIRecommendations}
+                onChange={e => setIncludeAIRecommendations(e.target.checked)}
+                style={{ marginRight: '0.3rem' }}
+              />
+              Incluir recomendaciones AI
+            </label>
+
             {emailError && <div className="error">{emailError}</div>}
             {emailSuccess && <div className="success">¡Correo enviado exitosamente!</div>}
-            
+
             <div className="email-actions">
               <Button
                 type="button"
@@ -391,7 +414,7 @@ function InventoryPage() {
                 ))}
               </select>
             </div>
-            
+
             <Input
               type="number"
               name="quantity"
@@ -403,17 +426,17 @@ function InventoryPage() {
               min="0"
               disabled={createLoading || createSuccess}
             />
-            
+
             {createError && <div className="error">{createError}</div>}
             {createSuccess && <div className="success">¡Inventario creado exitosamente!</div>}
-            
+
             {availableProducts.length === 0 && !createSuccess && (
               <div className="info-message">
                 No hay productos disponibles para agregar al inventario. 
                 Todos los productos de la empresa ya están en el inventario.
               </div>
             )}
-            
+
             <div className="form-actions">
               <Button
                 type="button"
