@@ -3,8 +3,10 @@ from rest_framework import serializers
 from infrastructure.models import Product
 
 
-# Valid currency codes - should match domain.entities.currency.Currency enum
-# This is maintained at the API layer but references domain concepts
+# Valid currency codes - MUST match domain.entities.currency.Currency enum
+# Located at: domain/src/domain/entities/currency.py
+# If currencies are added to domain, they MUST be added here as well
+# Current valid currencies: USD, EUR, COP
 VALID_CURRENCIES = ['USD', 'EUR', 'COP']
 
 
