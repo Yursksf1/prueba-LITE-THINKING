@@ -66,6 +66,21 @@ export const companyService = {
   getByNit: async (nit) => {
     const response = await api.get(`/companies/${nit}/`);
     return response.data;
+  },
+  
+  create: async (companyData) => {
+    const response = await api.post('/companies/', companyData);
+    return response.data;
+  },
+  
+  update: async (nit, companyData) => {
+    const response = await api.put(`/companies/${nit}/`, companyData);
+    return response.data;
+  },
+  
+  delete: async (nit) => {
+    const response = await api.delete(`/companies/${nit}/`);
+    return response.data;
   }
 };
 

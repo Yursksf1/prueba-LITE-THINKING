@@ -1,3 +1,13 @@
+.company-list-container {
+  width: 100%;
+}
+
+.company-list-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
 .company-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -28,4 +38,31 @@
   color: #666;
   background-color: #f8f9fa;
   border-radius: 4px;
+}
+
+.delete-confirmation {
+  text-align: center;
+}
+
+.delete-confirmation p {
+  margin: 10px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.company-name-delete {
+  color: #dc3545 !important;
+  font-size: 16px !important;
+  margin: 15px 0 !important;
+}
+
+.delete-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 25px;
+}
+
+.delete-actions button {
+  min-width: 100px;
 }
