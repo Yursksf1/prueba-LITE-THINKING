@@ -29,7 +29,7 @@ class AIRecommendationsService:
         self.api_key = os.getenv('LLM_API_KEY', '')
         self.model = os.getenv('LLM_MODEL', 'facebook/bart-large-cnn')
         self.timeout = 30  # seconds
-        self.api_url = f"https://api-inference.huggingface.co/models/{self.model}"
+        self.api_url = f"https://router.huggingface.co/hf-inference/models/{self.model}"
         
     def is_configured(self) -> bool:
         """
@@ -71,9 +71,12 @@ class AIRecommendationsService:
         try:
             # Build the prompt from inventory data
             prompt = self._build_prompt(inventory_items, company_name)
-            
+            logger.error(">>> AI service")
+            logger.error(f">>> prompt: {prompt}")
             # Call the LLM API
             response_text = self._call_huggingface_api(prompt)
+
+            logger.error(f">>> response: {response_text}")
             
             if not response_text or not response_text.strip():
                 logger.warning("AI service returned empty response")
@@ -117,18 +120,18 @@ class AIRecommendationsService:
         # Start with context
         company_text = f" de {company_name}" if company_name else ""
         prompt_parts = [
-            f"Analiza el siguiente inventario{company_text} y genera recomendaciones claras para un administrador.",
-            "Identifica productos con bajo stock (menos de 10 unidades), exceso de inventario (más de 100 unidades) y observaciones generales.",
+            f"Se recomienda a la empresa {company_text} Considere reabastecer los siguientes productos.",
             "",
             "Inventario:"
         ]
         
         # Add inventory items
         for item in inventory_items[:20]:  # Limit to first 20 items to avoid token limits
-            product_name = item.get('product_name', 'Producto')
-            product_code = item.get('product_code', 'N/A')
             quantity = item.get('quantity', 0)
-            prompt_parts.append(f"- {product_name} (código: {product_code}): {quantity} unidades")
+            if quantity<10:
+                product_name = item.get('product_name', 'Producto')
+                product_code = item.get('product_code', 'N/A')
+                prompt_parts.append(f"- {product_name} (código: {product_code}): {quantity} unidades")
         
         if len(inventory_items) > 20:
             prompt_parts.append(f"... y {len(inventory_items) - 20} productos más.")
@@ -180,7 +183,8 @@ class AIRecommendationsService:
         
         # Parse response
         result = response.json()
-        
+        logger.error(f">>> result: {result}")
+
         # Handle different response formats
         if isinstance(result, list) and len(result) > 0:
             if isinstance(result[0], dict) and 'generated_text' in result[0]:
