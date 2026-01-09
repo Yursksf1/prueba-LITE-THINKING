@@ -179,7 +179,7 @@ function InventoryPage() {
       return;
     }
     
-    if (!createForm.quantity || createForm.quantity === '') {
+    if (!createForm.quantity) {
       setCreateError('La cantidad es requerida.');
       return;
     }

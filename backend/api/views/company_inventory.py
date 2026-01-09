@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.http import HttpResponse
 
-from api.permissions import IsAdministratorOrReadOnly, IsAdministrator
+from api.permissions import IsAdministratorOrReadOnly
 from api.serializers.inventory import SendEmailSerializer, CreateInventorySerializer
 from infrastructure.models import InventoryItem, Company, Product
 from application.services import PDFGeneratorService, EmailService
