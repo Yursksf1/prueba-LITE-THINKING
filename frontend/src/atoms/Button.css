@@ -31,6 +31,15 @@
   background-color: #545b62;
 }
 
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
 .btn-full-width {
   width: 100%;
 }
