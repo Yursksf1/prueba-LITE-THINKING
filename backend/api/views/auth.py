@@ -15,7 +15,7 @@ def login_view(request):
     """
     Login endpoint that authenticates a user and returns JWT tokens.
     
-    POST /api/auth/login/
+    POST /api/v1/auth/login/
     Body: {"email": "user@example.com", "password": "password"}
     """
     serializer = LoginSerializer(data=request.data)
@@ -60,7 +60,7 @@ def refresh_token_view(request):
     """
     Refresh token endpoint to get a new access token.
     
-    POST /api/auth/refresh/
+    POST /api/v1/auth/refresh/
     Body: {"refresh": "refresh_token"}
     """
     refresh_token = request.data.get('refresh')
@@ -88,7 +88,7 @@ def me_view(request):
     """
     Get current user information.
     
-    GET /api/auth/me/
+    GET /api/v1/auth/me/
     """
     return Response(
         UserSerializer(request.user).data,

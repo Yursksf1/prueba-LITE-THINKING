@@ -3,6 +3,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from api.permissions import IsAdministratorOrReadOnly
+from api.serializers.company import CompanySerializer, CompanyListSerializer
+from infrastructure.models import Company
 
 
 @api_view(['GET', 'POST'])
@@ -11,26 +13,53 @@ def company_list_view(request):
     """
     List companies or create a new company.
     
-    GET /api/companies/ - All authenticated users can view
-    POST /api/companies/ - Only administrators can create
+    GET /api/v1/companies/ - All authenticated users can view
+    POST /api/v1/companies/ - Only administrators can create
+    
+    Request Body (POST):
+    {
+        "nit": "123456789",
+        "name": "Company Name",
+        "address": "Company Address",
+        "phone": "+57 300 1234567"
+    }
+    
+    Response (GET):
+    [
+        {
+            "nit": "123456789",
+            "name": "Company Name",
+            "address": "Company Address",
+            "phone": "+57 300 1234567"
+        }
+    ]
+    
+    Response (POST):
+    {
+        "nit": "123456789",
+        "name": "Company Name",
+        "address": "Company Address",
+        "phone": "+57 300 1234567",
+        "created_at": "2026-01-09T00:00:00Z",
+        "updated_at": "2026-01-09T00:00:00Z"
+    }
+    
+    Error Codes:
+    - 400: Bad Request (invalid data)
+    - 401: Unauthorized
+    - 403: Forbidden (non-admin trying to create)
     """
     if request.method == 'GET':
-        # TODO: Implement list companies logic
-        # This would call the domain service through application layer
-        return Response({
-            'message': 'List of companies',
-            'data': [],
-            'user_role': request.user.role
-        }, status=status.HTTP_200_OK)
+        companies = Company.objects.all()
+        serializer = CompanyListSerializer(companies, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     elif request.method == 'POST':
-        # Only administrators can reach here due to permission class
-        # TODO: Implement create company logic
-        # This would call the domain service through application layer
-        return Response({
-            'message': 'Company created successfully',
-            'data': request.data
-        }, status=status.HTTP_201_CREATED)
+        serializer = CompanySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
@@ -39,29 +68,52 @@ def company_detail_view(request, nit):
     """
     Retrieve, update or delete a company.
     
-    GET /api/companies/{nit}/ - All authenticated users can view
-    PUT /api/companies/{nit}/ - Only administrators can update
-    DELETE /api/companies/{nit}/ - Only administrators can delete
+    GET /api/v1/companies/{nit}/ - All authenticated users can view
+    PUT /api/v1/companies/{nit}/ - Only administrators can update
+    DELETE /api/v1/companies/{nit}/ - Only administrators can delete
+    
+    Request Body (PUT):
+    {
+        "name": "Updated Company Name",
+        "address": "Updated Address",
+        "phone": "+57 300 9876543"
+    }
+    
+    Response (GET, PUT):
+    {
+        "nit": "123456789",
+        "name": "Company Name",
+        "address": "Company Address",
+        "phone": "+57 300 1234567",
+        "created_at": "2026-01-09T00:00:00Z",
+        "updated_at": "2026-01-09T00:00:00Z"
+    }
+    
+    Error Codes:
+    - 400: Bad Request (invalid data)
+    - 401: Unauthorized
+    - 403: Forbidden (non-admin trying to update/delete)
+    - 404: Not Found
     """
+    try:
+        company = Company.objects.get(nit=nit)
+    except Company.DoesNotExist:
+        return Response(
+            {'detail': 'Company not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
     if request.method == 'GET':
-        # TODO: Implement retrieve company logic
-        return Response({
-            'message': f'Company details for NIT: {nit}',
-            'data': {},
-            'user_role': request.user.role
-        }, status=status.HTTP_200_OK)
+        serializer = CompanySerializer(company)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     elif request.method == 'PUT':
-        # Only administrators can reach here
-        # TODO: Implement update company logic
-        return Response({
-            'message': f'Company {nit} updated successfully',
-            'data': request.data
-        }, status=status.HTTP_200_OK)
+        serializer = CompanySerializer(company, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     elif request.method == 'DELETE':
-        # Only administrators can reach here
-        # TODO: Implement delete company logic
-        return Response({
-            'message': f'Company {nit} deleted successfully'
-        }, status=status.HTTP_204_NO_CONTENT)
+        company.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
