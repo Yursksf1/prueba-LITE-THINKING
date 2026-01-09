@@ -15,15 +15,32 @@ class ProductSerializer(serializers.ModelSerializer):
     
     company_nit = serializers.CharField(source='company.nit', read_only=True)
     company_name = serializers.CharField(source='company.name', read_only=True)
-    
+    prices = serializers.SerializerMethodField()
+
     class Meta:
         model = Product
         fields = [
-            'code', 'name', 'features', 'prices', 
-            'company_nit', 'company_name', 
+            'code', 'name', 'features', 'prices',
+            'company_nit', 'company_name',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
+
+    def get_prices(self, obj):
+        # Expose as {"USD": 100.0, ...}
+        if not obj.prices:
+            return {}
+        # If legacy structure, convert
+        result = {}
+        for k, v in obj.prices.items():
+            if isinstance(v, dict) and 'amount' in v:
+                try:
+                    result[k] = float(v['amount'])
+                except Exception:
+                    result[k] = v['amount']
+            else:
+                result[k] = v
+        return result
 
 
 class ProductCreateSerializer(serializers.ModelSerializer):
@@ -64,78 +81,39 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     
     def validate_prices(self, value):
         """
-        Validate prices structure and business rules.
-        
+        Validate prices structure and business rules for new format.
         Expected format:
         {
-            "USD": {"amount": 100.00, "currency": "USD"},
-            "COP": {"amount": 400000.00, "currency": "COP"}
+            "USD": 100.00,
+            "COP": 400000.00
         }
-        
         Validates:
         - Prices is a non-empty dictionary
-        - Each currency code is valid (references domain Currency enum)
-        - Each price has 'amount' and 'currency' fields
-        - Amount is a positive number
-        - Currency matches the key
+        - Each currency code is valid
+        - Each price is a positive number
         """
         if not value:
             raise serializers.ValidationError("At least one price is required")
-        
         if not isinstance(value, dict):
             raise serializers.ValidationError("Prices must be a dictionary with currency codes as keys")
-        
         validated_prices = {}
-        for currency_code, price_data in value.items():
-            # Validate currency code
+        for currency_code, amount in value.items():
             currency_upper = currency_code.strip().upper()
             if currency_upper not in VALID_CURRENCIES:
                 raise serializers.ValidationError(
                     f"Invalid currency code: '{currency_code}'. Valid currencies are: {', '.join(VALID_CURRENCIES)}"
                 )
-            
-            # Validate price structure
-            if not isinstance(price_data, dict):
-                raise serializers.ValidationError(
-                    f"Price for {currency_upper} must be an object with 'amount' and 'currency' fields"
-                )
-            
-            if 'amount' not in price_data:
-                raise serializers.ValidationError(
-                    f"Price for {currency_upper} must include 'amount' field"
-                )
-            
-            if 'currency' not in price_data:
-                raise serializers.ValidationError(
-                    f"Price for {currency_upper} must include 'currency' field"
-                )
-            
-            # Validate currency field matches key
-            price_currency = str(price_data['currency']).strip().upper()
-            if price_currency != currency_upper:
-                raise serializers.ValidationError(
-                    f"Currency mismatch: key is '{currency_upper}' but currency field is '{price_currency}'"
-                )
-            
-            # Validate amount is positive
             try:
-                amount = Decimal(str(price_data['amount']))
+                amount_val = Decimal(str(amount))
             except (InvalidOperation, ValueError, TypeError):
                 raise serializers.ValidationError(
                     f"Invalid amount for {currency_upper}: must be a valid number"
                 )
-            
-            if amount <= 0:
+            if amount_val <= 0:
                 raise serializers.ValidationError(
                     f"Amount for {currency_upper} must be greater than zero"
                 )
-            
-            # Store validated price - keep as Decimal string for precision
-            validated_prices[currency_upper] = {
-                'amount': str(amount),
-                'currency': currency_upper
-            }
-        
+            validated_prices[currency_upper] = float(amount_val)
         return validated_prices
 
 

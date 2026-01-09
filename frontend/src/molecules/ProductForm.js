@@ -78,15 +78,11 @@ function ProductForm({ onSubmit, onCancel, loading = false }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    // Transform data to match API contract
+    // Transform data to match new API contract: { "USD": 100.0, ... }
     const prices = {};
     formData.prices.forEach(price => {
       if (price.currency && price.amount) {
-        prices[price.currency] = {
-          amount: parseFloat(price.amount),
-          currency: price.currency
-        };
+        prices[price.currency] = parseFloat(price.amount);
       }
     });
 

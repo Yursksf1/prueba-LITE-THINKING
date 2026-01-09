@@ -22,8 +22,8 @@ def product_list_view(request, nit):
         "name": "Product Name",
         "features": ["Feature 1", "Feature 2"],
         "prices": {
-            "USD": {"amount": 100.00, "currency": "USD"},
-            "COP": {"amount": 400000.00, "currency": "COP"}
+            "USD": 100.00,
+            "COP": 400000.00
         }
     }
     
@@ -43,8 +43,8 @@ def product_list_view(request, nit):
         "name": "Product Name",
         "features": ["Feature 1", "Feature 2"],
         "prices": {
-            "USD": {"amount": 100.00, "currency": "USD"},
-            "COP": {"amount": 400000.00, "currency": "COP"}
+            "USD": 100.00,
+            "COP": 400000.00
         },
         "company_nit": "123456789",
         "company_name": "Company Name",
