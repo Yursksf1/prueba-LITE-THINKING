@@ -250,6 +250,98 @@ class CompanyInventoryPDFTestCase(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertIn('detail', response.data)
+    
+    @patch('api.views.company_inventory.AIRecommendationsService')
+    @patch('api.views.company_inventory.PDFGeneratorService')
+    def test_download_inventory_pdf_with_ai_recommendations(self, mock_pdf_service, mock_ai_service):
+        """Test downloading PDF with AI recommendations enabled."""
+        # Mock services
+        mock_buffer = BytesIO(b'PDF content with AI')
+        mock_pdf_service.return_value.generate_inventory_pdf.return_value = mock_buffer
+        mock_ai_service.return_value.generate_recommendations.return_value = 'AI generated recommendations'
+        
+        self.client.force_authenticate(user=self.admin_user)
+        
+        response = self.client.get(
+            f'/api/v1/companies/{self.company.nit}/inventory/pdf/?include_ai_recommendations=true'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        
+        # Verify AI service was called
+        mock_ai_service.return_value.generate_recommendations.assert_called_once()
+        
+        # Verify PDF service was called with AI recommendations
+        call_args = mock_pdf_service.return_value.generate_inventory_pdf.call_args
+        self.assertIsNotNone(call_args[1]['ai_recommendations'])
+        self.assertEqual(call_args[1]['ai_recommendations'], 'AI generated recommendations')
+    
+    @patch('api.views.company_inventory.AIRecommendationsService')
+    @patch('api.views.company_inventory.PDFGeneratorService')
+    def test_download_inventory_pdf_without_ai_recommendations(self, mock_pdf_service, mock_ai_service):
+        """Test that AI is NOT invoked when flag is false."""
+        # Mock services
+        mock_buffer = BytesIO(b'PDF content without AI')
+        mock_pdf_service.return_value.generate_inventory_pdf.return_value = mock_buffer
+        
+        self.client.force_authenticate(user=self.admin_user)
+        
+        response = self.client.get(
+            f'/api/v1/companies/{self.company.nit}/inventory/pdf/?include_ai_recommendations=false'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verify AI service was NOT called
+        mock_ai_service.return_value.generate_recommendations.assert_not_called()
+        
+        # Verify PDF service was called with None for AI recommendations
+        call_args = mock_pdf_service.return_value.generate_inventory_pdf.call_args
+        self.assertIsNone(call_args[1]['ai_recommendations'])
+    
+    @patch('api.views.company_inventory.AIRecommendationsService')
+    @patch('api.views.company_inventory.PDFGeneratorService')
+    def test_download_inventory_pdf_default_no_ai(self, mock_pdf_service, mock_ai_service):
+        """Test that AI is NOT invoked by default (when no query param)."""
+        # Mock services
+        mock_buffer = BytesIO(b'PDF content')
+        mock_pdf_service.return_value.generate_inventory_pdf.return_value = mock_buffer
+        
+        self.client.force_authenticate(user=self.admin_user)
+        
+        response = self.client.get(f'/api/v1/companies/{self.company.nit}/inventory/pdf/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verify AI service was NOT called
+        mock_ai_service.return_value.generate_recommendations.assert_not_called()
+    
+    @patch('api.views.company_inventory.AIRecommendationsService')
+    @patch('api.views.company_inventory.PDFGeneratorService')
+    def test_download_inventory_pdf_ai_error_does_not_break_pdf(self, mock_pdf_service, mock_ai_service):
+        """Test that AI errors don't prevent PDF generation."""
+        # Mock AI service to return error message
+        mock_ai_service.return_value.generate_recommendations.return_value = 'No fue posible generar recomendaciones automáticas en este momento.'
+        
+        # Mock PDF generation to succeed
+        mock_buffer = BytesIO(b'PDF content with error message')
+        mock_pdf_service.return_value.generate_inventory_pdf.return_value = mock_buffer
+        
+        self.client.force_authenticate(user=self.admin_user)
+        
+        response = self.client.get(
+            f'/api/v1/companies/{self.company.nit}/inventory/pdf/?include_ai_recommendations=true'
+        )
+        
+        # PDF should still be generated successfully
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        
+        # PDF service should have been called with the error message
+        call_args = mock_pdf_service.return_value.generate_inventory_pdf.call_args
+        self.assertIn('No fue posible', call_args[1]['ai_recommendations'])
+
 
 
 class CompanyInventorySendEmailTestCase(TestCase):
@@ -414,6 +506,73 @@ class CompanyInventorySendEmailTestCase(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('not configured', response.data['message'])
+    
+    @patch('api.views.company_inventory.AIRecommendationsService')
+    @patch('api.views.company_inventory.EmailService')
+    @patch('api.views.company_inventory.PDFGeneratorService')
+    def test_send_inventory_email_with_ai_recommendations(self, mock_pdf_service, mock_email_service, mock_ai_service):
+        """Test sending email with AI recommendations enabled."""
+        # Mock services
+        mock_buffer = BytesIO(b'PDF content with AI')
+        mock_pdf_service.return_value.generate_inventory_pdf.return_value = mock_buffer
+        mock_email_service.return_value.validate_email_configuration.return_value = True
+        mock_email_service.return_value.send_inventory_report.return_value = True
+        mock_ai_service.return_value.generate_recommendations.return_value = 'AI recommendations for email'
+        
+        self.client.force_authenticate(user=self.admin_user)
+        
+        data = {
+            'email': 'recipient@example.com',
+            'include_ai_recommendations': True
+        }
+        response = self.client.post(
+            f'/api/v1/companies/{self.company.nit}/inventory/send-email/',
+            data,
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verify AI service was called
+        mock_ai_service.return_value.generate_recommendations.assert_called_once()
+        
+        # Verify PDF service was called with AI recommendations
+        call_args = mock_pdf_service.return_value.generate_inventory_pdf.call_args
+        self.assertIsNotNone(call_args[1]['ai_recommendations'])
+        self.assertEqual(call_args[1]['ai_recommendations'], 'AI recommendations for email')
+    
+    @patch('api.views.company_inventory.AIRecommendationsService')
+    @patch('api.views.company_inventory.EmailService')
+    @patch('api.views.company_inventory.PDFGeneratorService')
+    def test_send_inventory_email_without_ai_recommendations(self, mock_pdf_service, mock_email_service, mock_ai_service):
+        """Test that AI is NOT invoked when sending email without flag."""
+        # Mock services
+        mock_buffer = BytesIO(b'PDF content')
+        mock_pdf_service.return_value.generate_inventory_pdf.return_value = mock_buffer
+        mock_email_service.return_value.validate_email_configuration.return_value = True
+        mock_email_service.return_value.send_inventory_report.return_value = True
+        
+        self.client.force_authenticate(user=self.admin_user)
+        
+        data = {
+            'email': 'recipient@example.com',
+            'include_ai_recommendations': False
+        }
+        response = self.client.post(
+            f'/api/v1/companies/{self.company.nit}/inventory/send-email/',
+            data,
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verify AI service was NOT called
+        mock_ai_service.return_value.generate_recommendations.assert_not_called()
+        
+        # Verify PDF service was called with None for AI recommendations
+        call_args = mock_pdf_service.return_value.generate_inventory_pdf.call_args
+        self.assertIsNone(call_args[1]['ai_recommendations'])
+
 
 
 class CompanyInventoryCreateTestCase(TestCase):
