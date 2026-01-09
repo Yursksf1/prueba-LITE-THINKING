@@ -1,0 +1,20 @@
+.company-card {
+  cursor: default;
+}
+
+.company-name {
+  margin: 0 0 15px 0;
+  color: #007bff;
+  font-size: 20px;
+}
+
+.company-info p {
+  margin: 8px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.company-info strong {
+  color: #333;
+  margin-right: 8px;
+}
