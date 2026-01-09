@@ -55,9 +55,9 @@ class ProductCreationTestCase(TestCase):
             'name': 'Test Product',
             'features': ['Feature 1', 'Feature 2'],
             'prices': {
-                'USD': {'amount': 100.00, 'currency': 'USD'},
-                'COP': {'amount': 400000.00, 'currency': 'COP'},
-                'EUR': {'amount': 90.00, 'currency': 'EUR'}
+                'USD': 100.00,
+                'COP': 400000.00,
+                'EUR': 90.00
             }
         }
         
@@ -89,7 +89,7 @@ class ProductCreationTestCase(TestCase):
             'name': 'Single Currency Product',
             'features': [],
             'prices': {
-                'COP': {'amount': 50000.00, 'currency': 'COP'}
+                'COP': 50000.00
             }
         }
         
@@ -131,7 +131,7 @@ class ProductCreationTestCase(TestCase):
             'name': 'Invalid Currency Product',
             'features': [],
             'prices': {
-                'XXX': {'amount': 100.00, 'currency': 'XXX'}
+                'XXX': 100.00
             }
         }
         
@@ -153,7 +153,7 @@ class ProductCreationTestCase(TestCase):
             'name': 'Negative Price Product',
             'features': [],
             'prices': {
-                'USD': {'amount': -10.00, 'currency': 'USD'}
+                'USD': -10.00
             }
         }
         
@@ -175,7 +175,7 @@ class ProductCreationTestCase(TestCase):
             'name': 'Zero Price Product',
             'features': [],
             'prices': {
-                'USD': {'amount': 0, 'currency': 'USD'}
+                'USD': 0
             }
         }
         
@@ -195,7 +195,7 @@ class ProductCreationTestCase(TestCase):
             'name': 'Unauthenticated Product',
             'features': [],
             'prices': {
-                'USD': {'amount': 100.00, 'currency': 'USD'}
+                'USD': 100.00
             }
         }
         
@@ -216,7 +216,7 @@ class ProductCreationTestCase(TestCase):
             'name': 'External User Product',
             'features': [],
             'prices': {
-                'USD': {'amount': 100.00, 'currency': 'USD'}
+                'USD': 100.00
             }
         }
         
@@ -237,7 +237,7 @@ class ProductCreationTestCase(TestCase):
             'name': 'Orphan Product',
             'features': [],
             'prices': {
-                'USD': {'amount': 100.00, 'currency': 'USD'}
+                'USD': 100.00
             }
         }
         
@@ -258,7 +258,7 @@ class ProductCreationTestCase(TestCase):
             'name': 'Empty Code Product',
             'features': [],
             'prices': {
-                'USD': {'amount': 100.00, 'currency': 'USD'}
+                'USD': 100.00
             }
         }
         
@@ -280,7 +280,7 @@ class ProductCreationTestCase(TestCase):
             'name': '   ',
             'features': [],
             'prices': {
-                'USD': {'amount': 100.00, 'currency': 'USD'}
+                'USD': 100.00
             }
         }
         
@@ -302,7 +302,7 @@ class ProductCreationTestCase(TestCase):
             'name': 'Mismatched Currency Product',
             'features': [],
             'prices': {
-                'USD': {'amount': 100.00, 'currency': 'COP'}  # Mismatch!
+                'USD': 100.00  # Mismatch!
             }
         }
         
@@ -322,7 +322,7 @@ class ProductCreationTestCase(TestCase):
             code='EXISTING001',
             name='Existing Product',
             features=['Feature A'],
-            prices={'USD': {'amount': 50.00, 'currency': 'USD'}},
+            prices={'USD': 50.00 },
             company=self.company
         )
         
@@ -349,8 +349,8 @@ class ProductSerializerValidationTestCase(TestCase):
             'name': 'Test Product',
             'features': [],
             'prices': {
-                'USD': {'amount': 100.00, 'currency': 'USD'},
-                'COP': {'amount': 400000.00, 'currency': 'COP'}
+                'USD': 100.00,
+                'COP': 400000.00,
             }
         }
         serializer = self.serializer_class(data=data)
@@ -375,7 +375,7 @@ class ProductSerializerValidationTestCase(TestCase):
             'name': 'Test Product',
             'features': [],
             'prices': {
-                'USD': {'amount': 100.00, 'currency': 'USD'}
+                'USD':  100.00,
             }
         }
         serializer = self.serializer_class(data=data)
