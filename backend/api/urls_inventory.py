@@ -1,12 +1,12 @@
 from django.urls import path
-from api.views.inventory import (
-    inventory_list_view,
-    inventory_pdf_view,
-    inventory_send_email_view
+from api.views.company_inventory import (
+    company_inventory_list_view,
+    company_inventory_pdf_view,
+    company_inventory_send_email_view
 )
-
 urlpatterns = [
-    path('', inventory_list_view, name='inventory-list'),
-    path('pdf/', inventory_pdf_view, name='inventory-pdf'),
-    path('send-email/', inventory_send_email_view, name='inventory-send-email'),
+    # Company-specific inventory endpoints
+    path('', company_inventory_list_view, name='company-inventory-list'),
+    path('pdf/', company_inventory_pdf_view, name='company-inventory-pdf'),
+    path('send-email/', company_inventory_send_email_view, name='company-inventory-send-email'),
 ]
