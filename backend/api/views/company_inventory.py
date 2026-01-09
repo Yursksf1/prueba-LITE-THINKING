@@ -119,6 +119,13 @@ def company_inventory_list_view(request, nit):
     product_code = serializer.validated_data['product_code']
     quantity = serializer.validated_data['quantity']
     
+    # Check if inventory item already exists (for POST/create, we don't allow duplicates)
+    if InventoryItem.objects.filter(company__nit=nit, product__code=product_code).exists():
+        return Response(
+            {'detail': 'Inventory item already exists for this product and company'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
     try:
         # Use domain-driven use case for inventory management
         use_case = AddInventoryUseCase()
@@ -147,19 +154,27 @@ def company_inventory_list_view(request, nit):
             status=status.HTTP_404_NOT_FOUND
         )
     except InvalidProductError as e:
+        # Check if it's a "not found" error vs "doesn't belong" error
+        error_msg = str(e)
+        if "does not exist for company" in error_msg:
+            # Product exists but doesn't belong to this company
+            # Check if product exists at all
+            if Product.objects.filter(code=product_code).exists():
+                return Response(
+                    {'detail': 'Product does not belong to this company'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                # Product doesn't exist at all
+                return Response(
+                    {'detail': 'Product not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
         return Response(
-            {'detail': str(e)},
+            {'detail': error_msg},
             status=status.HTTP_400_BAD_REQUEST
         )
     except InvalidInventoryError as e:
-        # This includes the case where inventory item already exists
-        if "already exists" in str(e).lower() or InventoryItem.objects.filter(
-            company__nit=nit, product__code=product_code
-        ).exists():
-            return Response(
-                {'detail': 'Inventory item already exists for this product and company'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
         return Response(
             {'detail': str(e)},
             status=status.HTTP_400_BAD_REQUEST
