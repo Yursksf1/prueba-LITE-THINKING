@@ -29,7 +29,7 @@ Authorization: Bearer <access_token>
 
 ## 🔑 Autenticación
 
-### POST /api/v1/auth/login
+### POST /api/v1/auth/login/
 
 Autenticar usuario y obtener tokens JWT.
 
