@@ -98,19 +98,19 @@ export const productService = {
 
 export const inventoryService = {
   getByCompany: async (nit) => {
-    const response = await api.get(`/inventory/?company_nit=${nit}`);
+    const response = await api.get(`/companies/${nit}/inventory/`);
     return response.data;
   },
   
   downloadPdf: async (nit) => {
-    const response = await api.get(`/inventory/pdf/?company_nit=${nit}`, {
+    const response = await api.get(`/companies/${nit}/inventory/pdf/`, {
       responseType: 'blob'
     });
     return response.data;
   },
   
   sendEmail: async (nit, email) => {
-    const response = await api.post('/inventory/send-email/', {
+    const response = await api.post(`/companies/${nit}/inventory/send-email/`, {
       email,
       company_nit: nit
     });

@@ -14,5 +14,6 @@ urlpatterns = [
     path('companies/<str:nit>/products/', include('api.urls_products')),
     
     # Inventory endpoints
-    path('inventory/', include('api.urls_inventory')),
+    path('companies/<str:nit>/inventory/', include('api.urls_inventory')),
+
 ]

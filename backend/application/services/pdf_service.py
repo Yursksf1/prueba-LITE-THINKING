@@ -138,10 +138,15 @@ class PDFGeneratorService:
                 # Format prices
                 prices = item.get('prices', {})
                 if isinstance(prices, dict) and prices:
-                    price_str = ', '.join([f"{k}: ${v:,.2f}" for k, v in prices.items()])
+                    price_strs = []
+                    for k, v in prices.items():
+                        try:
+                            price_strs.append(f"{k}: ${float(v):,.2f}")
+                        except (ValueError, TypeError):
+                            price_strs.append(f"{k}: {v}")
+                    price_str = ', '.join(price_strs)
                 else:
                     price_str = 'N/A'
-                
                 table_data.append([
                     str(item.get('product_code', 'N/A')),
                     str(item.get('product_name', 'N/A')),
