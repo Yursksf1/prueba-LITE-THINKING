@@ -12,9 +12,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.http import HttpResponse
 
-from api.permissions import IsAdministratorOrReadOnly
-from api.serializers.inventory import SendEmailSerializer
-from infrastructure.models import InventoryItem, Company
+from api.permissions import IsAdministratorOrReadOnly, IsAdministrator
+from api.serializers.inventory import SendEmailSerializer, CreateInventorySerializer
+from infrastructure.models import InventoryItem, Company, Product
 from application.services import PDFGeneratorService, EmailService
 
 import logging
@@ -22,11 +22,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 @permission_classes([IsAdministratorOrReadOnly])
 def company_inventory_list_view(request, nit):
     """
-    List inventory items for a specific company.
+    List inventory items or create a new inventory item for a specific company.
     
     GET /api/v1/companies/{nit}/inventory/
     
@@ -44,10 +44,33 @@ def company_inventory_list_view(request, nit):
         }
     ]
     
+    POST /api/v1/companies/{nit}/inventory/
+    
+    Permissions:
+    - Administrator only
+    
+    Request Body:
+    {
+        "product_code": "PROD001",
+        "quantity": 50
+    }
+    
+    Response:
+    {
+        "product_code": "PROD001",
+        "product_name": "Laptop HP",
+        "quantity": 50,
+        "prices": {"USD": 1000.00, "COP": 4000000.00},
+        "updated_at": "2026-01-09T19:00:00.000Z"
+    }
+    
     Error Codes:
+    - 400: Bad Request (POST only - invalid data, product doesn't belong to company, or duplicate)
     - 401: Unauthorized
-    - 404: Company Not Found
+    - 403: Forbidden (POST only - not an administrator)
+    - 404: Company or Product Not Found
     """
+    # Validate company exists
     try:
         company = Company.objects.get(nit=nit)
     except Company.DoesNotExist:
@@ -56,23 +79,78 @@ def company_inventory_list_view(request, nit):
             status=status.HTTP_404_NOT_FOUND
         )
     
-    # Get inventory items with related data
-    inventory_items = InventoryItem.objects.filter(
-        company=company
-    ).select_related('product')
+    # Handle GET request (list inventory)
+    if request.method == 'GET':
+        # Get inventory items with related data
+        inventory_items = InventoryItem.objects.filter(
+            company=company
+        ).select_related('product')
+        
+        # Serialize data manually for consistency
+        data = []
+        for item in inventory_items:
+            data.append({
+                'product_code': item.product.code,
+                'product_name': item.product.name,
+                'quantity': item.quantity,
+                'prices': item.product.prices,
+                'updated_at': item.updated_at.isoformat()
+            })
+        
+        return Response(data, status=status.HTTP_200_OK)
     
-    # Serialize data manually for consistency
-    data = []
-    for item in inventory_items:
-        data.append({
-            'product_code': item.product.code,
-            'product_name': item.product.name,
-            'quantity': item.quantity,
-            'prices': item.product.prices,
-            'updated_at': item.updated_at.isoformat()
-        })
+    # Handle POST request (create inventory)
+    # Validate request data
+    serializer = CreateInventorySerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    return Response(data, status=status.HTTP_200_OK)
+    product_code = serializer.validated_data['product_code']
+    quantity = serializer.validated_data['quantity']
+    
+    # Validate product exists
+    try:
+        product = Product.objects.get(code=product_code)
+    except Product.DoesNotExist:
+        return Response(
+            {'detail': 'Product not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Validate product belongs to the company
+    if product.company.nit != company.nit:
+        return Response(
+            {'detail': 'Product does not belong to this company'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Check if inventory item already exists
+    if InventoryItem.objects.filter(company=company, product=product).exists():
+        return Response(
+            {'detail': 'Inventory item already exists for this product and company'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Create inventory item
+    inventory_item = InventoryItem.objects.create(
+        company=company,
+        product=product,
+        quantity=quantity
+    )
+    
+    logger.info(f"Inventory item created: {company.nit} - {product.code} - Quantity: {quantity}")
+    
+    # Return response in the same format as the list endpoint
+    return Response(
+        {
+            'product_code': inventory_item.product.code,
+            'product_name': inventory_item.product.name,
+            'quantity': inventory_item.quantity,
+            'prices': inventory_item.product.prices,
+            'updated_at': inventory_item.updated_at.isoformat()
+        },
+        status=status.HTTP_201_CREATED
+    )
 
 
 @api_view(['GET'])

@@ -414,3 +414,268 @@ class CompanyInventorySendEmailTestCase(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('not configured', response.data['message'])
+
+
+class CompanyInventoryCreateTestCase(TestCase):
+    """Test cases for POST /api/v1/companies/{nit}/inventory/"""
+    
+    def setUp(self):
+        """Set up test data."""
+        self.client = APIClient()
+        
+        # Create users
+        self.admin_user = User.objects.create_user(
+            email='admin@test.com',
+            password='admin123',
+            first_name='Admin',
+            last_name='User',
+            role='ADMINISTRATOR'
+        )
+        
+        self.external_user = User.objects.create_user(
+            email='external@test.com',
+            password='external123',
+            first_name='External',
+            last_name='User',
+            role='EXTERNAL'
+        )
+        
+        # Create company
+        self.company = Company.objects.create(
+            nit='123456789',
+            name='Test Company',
+            address='Test Address',
+            phone='+57 300 1234567'
+        )
+        
+        # Create products
+        self.product1 = Product.objects.create(
+            code='PROD001',
+            name='Laptop HP',
+            features=['16GB RAM', '512GB SSD'],
+            prices={'USD': 1000.00, 'COP': 4000000.00},
+            company=self.company
+        )
+        
+        self.product2 = Product.objects.create(
+            code='PROD002',
+            name='Mouse Logitech',
+            features=['Wireless', 'Ergonomic'],
+            prices={'USD': 50.00, 'COP': 200000.00},
+            company=self.company
+        )
+        
+        # Create another company for validation tests
+        self.company2 = Company.objects.create(
+            nit='987654321',
+            name='Another Company',
+            address='Another Address',
+            phone='+57 300 9876543'
+        )
+        
+        self.product3 = Product.objects.create(
+            code='PROD003',
+            name='Monitor Dell',
+            features=['27 inch', '4K'],
+            prices={'USD': 400.00, 'COP': 1600000.00},
+            company=self.company2
+        )
+    
+    def test_create_inventory_success(self):
+        """Test creating inventory item successfully as admin."""
+        self.client.force_authenticate(user=self.admin_user)
+        
+        data = {
+            'product_code': 'PROD001',
+            'quantity': 50
+        }
+        response = self.client.post(
+            f'/api/v1/companies/{self.company.nit}/inventory/',
+            data,
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['product_code'], 'PROD001')
+        self.assertEqual(response.data['product_name'], 'Laptop HP')
+        self.assertEqual(response.data['quantity'], 50)
+        self.assertIn('prices', response.data)
+        self.assertIn('updated_at', response.data)
+        
+        # Verify it was created in DB
+        self.assertTrue(
+            InventoryItem.objects.filter(
+                company=self.company,
+                product=self.product1
+            ).exists()
+        )
+    
+    def test_create_inventory_unauthenticated(self):
+        """Test creating inventory without authentication fails."""
+        data = {
+            'product_code': 'PROD001',
+            'quantity': 50
+        }
+        response = self.client.post(
+            f'/api/v1/companies/{self.company.nit}/inventory/',
+            data,
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    
+    def test_create_inventory_as_external_user(self):
+        """Test creating inventory as external user fails."""
+        self.client.force_authenticate(user=self.external_user)
+        
+        data = {
+            'product_code': 'PROD001',
+            'quantity': 50
+        }
+        response = self.client.post(
+            f'/api/v1/companies/{self.company.nit}/inventory/',
+            data,
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    
+    def test_create_inventory_company_not_found(self):
+        """Test creating inventory for non-existent company."""
+        self.client.force_authenticate(user=self.admin_user)
+        
+        data = {
+            'product_code': 'PROD001',
+            'quantity': 50
+        }
+        response = self.client.post(
+            '/api/v1/companies/INVALID_NIT/inventory/',
+            data,
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn('detail', response.data)
+    
+    def test_create_inventory_product_not_found(self):
+        """Test creating inventory for non-existent product."""
+        self.client.force_authenticate(user=self.admin_user)
+        
+        data = {
+            'product_code': 'INVALID_CODE',
+            'quantity': 50
+        }
+        response = self.client.post(
+            f'/api/v1/companies/{self.company.nit}/inventory/',
+            data,
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn('detail', response.data)
+    
+    def test_create_inventory_product_not_belong_to_company(self):
+        """Test creating inventory for product that doesn't belong to company."""
+        self.client.force_authenticate(user=self.admin_user)
+        
+        # Try to add product from company2 to company1's inventory
+        data = {
+            'product_code': 'PROD003',
+            'quantity': 50
+        }
+        response = self.client.post(
+            f'/api/v1/companies/{self.company.nit}/inventory/',
+            data,
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('detail', response.data)
+        self.assertIn('does not belong', response.data['detail'])
+    
+    def test_create_inventory_duplicate(self):
+        """Test creating duplicate inventory item fails."""
+        self.client.force_authenticate(user=self.admin_user)
+        
+        # Create first inventory item
+        InventoryItem.objects.create(
+            company=self.company,
+            product=self.product1,
+            quantity=30
+        )
+        
+        # Try to create duplicate
+        data = {
+            'product_code': 'PROD001',
+            'quantity': 50
+        }
+        response = self.client.post(
+            f'/api/v1/companies/{self.company.nit}/inventory/',
+            data,
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('detail', response.data)
+        self.assertIn('already exists', response.data['detail'])
+    
+    def test_create_inventory_invalid_quantity(self):
+        """Test creating inventory with invalid quantity."""
+        self.client.force_authenticate(user=self.admin_user)
+        
+        # Test negative quantity
+        data = {
+            'product_code': 'PROD001',
+            'quantity': -10
+        }
+        response = self.client.post(
+            f'/api/v1/companies/{self.company.nit}/inventory/',
+            data,
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('quantity', response.data)
+    
+    def test_create_inventory_missing_fields(self):
+        """Test creating inventory with missing required fields."""
+        self.client.force_authenticate(user=self.admin_user)
+        
+        # Missing product_code
+        data = {'quantity': 50}
+        response = self.client.post(
+            f'/api/v1/companies/{self.company.nit}/inventory/',
+            data,
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('product_code', response.data)
+        
+        # Missing quantity
+        data = {'product_code': 'PROD001'}
+        response = self.client.post(
+            f'/api/v1/companies/{self.company.nit}/inventory/',
+            data,
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('quantity', response.data)
+    
+    def test_create_inventory_zero_quantity(self):
+        """Test creating inventory with zero quantity is allowed."""
+        self.client.force_authenticate(user=self.admin_user)
+        
+        data = {
+            'product_code': 'PROD001',
+            'quantity': 0
+        }
+        response = self.client.post(
+            f'/api/v1/companies/{self.company.nit}/inventory/',
+            data,
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['quantity'], 0)

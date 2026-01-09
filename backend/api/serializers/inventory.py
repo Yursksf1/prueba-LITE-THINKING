@@ -21,6 +21,19 @@ class InventoryItemSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
+class CreateInventorySerializer(serializers.Serializer):
+    """Serializer for creating inventory items."""
+    
+    product_code = serializers.CharField(required=True, max_length=100)
+    quantity = serializers.IntegerField(required=True, min_value=0)
+    
+    def validate_quantity(self, value):
+        """Ensure quantity is non-negative."""
+        if value < 0:
+            raise serializers.ValidationError("Quantity must be greater than or equal to 0")
+        return value
+
+
 class SendEmailSerializer(serializers.Serializer):
     """Serializer for send email request."""
     
