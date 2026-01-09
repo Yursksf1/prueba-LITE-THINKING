@@ -6,13 +6,8 @@ Implements endpoints for inventory management per company:
 - GET /companies/{nit}/inventory/pdf/ - Download PDF for company inventory
 - POST /companies/{nit}/inventory/send-email/ - Send PDF by email
 """
-import sys
-import os
-
-# Add domain package to Python path
-domain_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'domain', 'src')
-if domain_path not in sys.path:
-    sys.path.insert(0, domain_path)
+from infrastructure.domain_loader import ensure_domain_in_path
+ensure_domain_in_path()
 
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -154,26 +149,22 @@ def company_inventory_list_view(request, nit):
             status=status.HTTP_404_NOT_FOUND
         )
     except InvalidProductError as e:
-        # Check if it's a "not found" error vs "doesn't belong" error
+        # Distinguish between product not existing vs. product not belonging to company
         error_msg = str(e)
-        if "does not exist for company" in error_msg:
+        # Check if product exists at all to determine appropriate status code
+        try:
+            Product.objects.get(code=product_code)
             # Product exists but doesn't belong to this company
-            # Check if product exists at all
-            if Product.objects.filter(code=product_code).exists():
-                return Response(
-                    {'detail': 'Product does not belong to this company'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            else:
-                # Product doesn't exist at all
-                return Response(
-                    {'detail': 'Product not found'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-        return Response(
-            {'detail': error_msg},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+            return Response(
+                {'detail': 'Product does not belong to this company'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Product.DoesNotExist:
+            # Product doesn't exist at all
+            return Response(
+                {'detail': 'Product not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
     except InvalidInventoryError as e:
         return Response(
             {'detail': str(e)},

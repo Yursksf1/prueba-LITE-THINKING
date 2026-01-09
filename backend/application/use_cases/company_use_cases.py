@@ -3,13 +3,8 @@ Application use cases for company management.
 
 Use cases orchestrate domain services and coordinate between layers.
 """
-import sys
-import os
-
-# Add domain package to Python path
-domain_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'domain', 'src')
-if domain_path not in sys.path:
-    sys.path.insert(0, domain_path)
+from infrastructure.domain_loader import ensure_domain_in_path
+ensure_domain_in_path()
 
 from domain.entities.company import Company as DomainCompany
 from domain.exceptions.errors import InvalidCompanyError

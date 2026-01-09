@@ -3,13 +3,8 @@ Application use cases for product management.
 
 Use cases orchestrate domain services and coordinate between layers.
 """
-import sys
-import os
-
-# Add domain package to Python path
-domain_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'domain', 'src')
-if domain_path not in sys.path:
-    sys.path.insert(0, domain_path)
+from infrastructure.domain_loader import ensure_domain_in_path
+ensure_domain_in_path()
 
 from domain.entities.product import Product as DomainProduct
 from domain.entities.money import Money
@@ -77,7 +72,14 @@ class RegisterProductUseCase:
         )
         
         # Convert domain entity to Django model and persist
-        company = DjangoCompany.objects.get(nit=company_nit)
+        try:
+            company = DjangoCompany.objects.get(nit=company_nit)
+        except DjangoCompany.DoesNotExist:
+            # This should not happen as domain service validates company exists
+            # But we handle it defensively to provide a clear error
+            raise InvalidCompanyError(
+                f"Company with NIT '{company_nit}' not found during persistence"
+            )
         
         # Convert domain Money objects back to simple dict for Django
         django_prices = {}

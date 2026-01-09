@@ -1,10 +1,5 @@
-import sys
-import os
-
-# Add domain package to Python path
-domain_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'domain', 'src')
-if domain_path not in sys.path:
-    sys.path.insert(0, domain_path)
+from infrastructure.domain_loader import ensure_domain_in_path
+ensure_domain_in_path()
 
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes

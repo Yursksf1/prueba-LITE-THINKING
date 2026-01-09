@@ -293,13 +293,11 @@ class ProductCreationTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('name', response.data)
     
-    def test_create_product_with_mismatched_currency_fails(self):
-        """Test that currency key must match currency field."""
+    def test_create_product_with_valid_single_currency(self):
+        """Test that valid single currency product is accepted by domain validation."""
         self.client.force_authenticate(user=self.admin_user)
         
-        # NOTE: This test previously expected failure for valid data.
-        # With domain-driven validation, {'USD': 100.00} is correctly accepted.
-        # The test has been updated to verify it now succeeds.
+        # With domain-driven validation, {'USD': 100.00} is correctly accepted
         product_data = {
             'code': 'PROD011',
             'name': 'Valid Currency Product',

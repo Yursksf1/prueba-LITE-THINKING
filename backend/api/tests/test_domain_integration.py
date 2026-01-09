@@ -4,13 +4,8 @@ Integration tests for domain layer architecture.
 These tests demonstrate that the domain layer is properly integrated with Django,
 validating business rules before persistence.
 """
-import sys
-import os
-
-# Add domain package to Python path
-domain_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'domain', 'src')
-if domain_path not in sys.path:
-    sys.path.insert(0, domain_path)
+from infrastructure.domain_loader import ensure_domain_in_path
+ensure_domain_in_path()
 
 from django.test import TestCase
 from domain.exceptions.errors import (

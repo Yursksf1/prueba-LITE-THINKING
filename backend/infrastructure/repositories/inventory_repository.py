@@ -3,15 +3,11 @@ Django ORM adapter for Inventory repository.
 
 Implements the InventoryRepository protocol from domain layer.
 """
-import sys
-import os
-
-# Add domain package to Python path
-domain_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'domain', 'src')
-if domain_path not in sys.path:
-    sys.path.insert(0, domain_path)
+from infrastructure.domain_loader import ensure_domain_in_path
+ensure_domain_in_path()
 
 from domain.entities.inventory_item import InventoryItem as DomainInventoryItem
+from domain.exceptions.errors import InvalidCompanyError, InvalidProductError
 from infrastructure.models import InventoryItem as DjangoInventoryItem, Company, Product
 
 
@@ -54,10 +50,25 @@ class DjangoInventoryRepository:
         
         Args:
             item: Domain InventoryItem to persist
+            
+        Raises:
+            InvalidCompanyError: If company doesn't exist
+            InvalidProductError: If product doesn't exist
         """
-        # Get company and product instances
-        company = Company.objects.get(nit=item.company_nit)
-        product = Product.objects.get(code=item.product_code)
+        # Get company and product instances with proper error handling
+        try:
+            company = Company.objects.get(nit=item.company_nit)
+        except Company.DoesNotExist:
+            raise InvalidCompanyError(
+                f"Cannot save inventory: Company with NIT '{item.company_nit}' does not exist"
+            )
+        
+        try:
+            product = Product.objects.get(code=item.product_code)
+        except Product.DoesNotExist:
+            raise InvalidProductError(
+                f"Cannot save inventory: Product '{item.product_code}' does not exist"
+            )
         
         # Update or create Django model
         DjangoInventoryItem.objects.update_or_create(
