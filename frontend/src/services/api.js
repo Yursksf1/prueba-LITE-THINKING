@@ -34,7 +34,7 @@ api.interceptors.response.use(
 
 export const authService = {
   login: async (email, password) => {
-    const response = await api.post('/auth/login', { email, password });
+    const response = await api.post('/auth/login/', { email, password });
     if (response.data.access) {
       localStorage.setItem('access_token', response.data.access);
       localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -59,12 +59,12 @@ export const authService = {
 
 export const companyService = {
   getAll: async () => {
-    const response = await api.get('/companies');
+    const response = await api.get('/companies/');
     return response.data;
   },
   
   getByNit: async (nit) => {
-    const response = await api.get(`/companies/${nit}`);
+    const response = await api.get(`/companies/${nit}/`);
     return response.data;
   }
 };
