@@ -1,70 +1,152 @@
-# Getting Started with Create React App
+# Frontend - Lite Thinking
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Frontend de React 19.2 siguiendo principios de Atomic Design.
 
-## Available Scripts
+## 🏗️ Estructura del Proyecto
 
-In the project directory, you can run:
+```
+src/
+├── atoms/              # Componentes básicos reutilizables
+│   ├── Button.js       # Botón básico
+│   ├── Input.js        # Campo de entrada
+│   └── Card.js         # Tarjeta contenedora
+│
+├── molecules/          # Componentes compuestos
+│   ├── LoginForm.js    # Formulario de login
+│   └── CompanyCard.js  # Tarjeta de empresa
+│
+├── organisms/          # Componentes complejos
+│   ├── Navbar.js       # Barra de navegación
+│   ├── Footer.js       # Pie de página
+│   └── CompanyList.js  # Lista de empresas
+│
+├── templates/          # Plantillas de página
+│   └── MainLayout.js   # Layout principal
+│
+├── pages/              # Páginas completas
+│   ├── LoginPage.js    # Página de login
+│   └── CompaniesPage.js # Página de empresas
+│
+├── services/           # Servicios de API
+│   └── api.js          # Cliente HTTP y servicios
+│
+└── utils/              # Utilidades
+    └── ProtectedRoute.js # Ruta protegida
+```
 
-### `npm start`
+## 🚀 Características
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **React 19.2** con hooks modernos
+- **React Router** para navegación
+- **Axios** para consumo de API REST
+- **Atomic Design** para organización de componentes
+- **Autenticación JWT** con localStorage
+- **Variables de entorno** para configuración
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 📦 Dependencias
 
-### `npm test`
+- `react` ^19.2.3
+- `react-dom` ^19.2.3
+- `react-router-dom` ^7.1.3
+- `axios` ^1.7.9
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 🔧 Configuración
 
-### `npm run build`
+1. Crear archivo `.env` en la raíz del frontend:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```env
+REACT_APP_API_URL=http://localhost:8000
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+2. Instalar dependencias:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+npm install
+```
 
-### `npm run eject`
+3. Ejecutar en desarrollo:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```bash
+npm start
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 🐳 Docker
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+El proyecto incluye `Dockerfile` y está configurado en `docker-compose.yml`:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```bash
+docker-compose up frontend
+```
 
-## Learn More
+## 📱 Vistas Implementadas
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Login
+- Ruta: `/login`
+- Formulario de autenticación
+- Validación de credenciales
+- Redirección automática tras login exitoso
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Listado de Empresas
+- Ruta: `/companies`
+- Lista de empresas registradas
+- Vista de solo lectura
+- Protegida por autenticación
 
-### Code Splitting
+## 🔐 Autenticación
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+- Token JWT almacenado en `localStorage`
+- Interceptor de Axios para agregar token automáticamente
+- Redirección a login en caso de token inválido
+- Componente `ProtectedRoute` para rutas privadas
 
-### Analyzing the Bundle Size
+## 🎨 Atomic Design
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Atoms (Átomos)
+Componentes básicos que no pueden descomponerse:
+- Button, Input, Card
 
-### Making a Progressive Web App
+### Molecules (Moléculas)
+Combinación de átomos:
+- LoginForm, CompanyCard
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### Organisms (Organismos)
+Componentes complejos con lógica:
+- Navbar, Footer, CompanyList
 
-### Advanced Configuration
+### Templates (Plantillas)
+Estructura de páginas:
+- MainLayout
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### Pages (Páginas)
+Páginas completas:
+- LoginPage, CompaniesPage
 
-### Deployment
+## 🌐 API
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+El frontend consume la API REST del backend:
 
-### `npm run build` fails to minify
+- `POST /api/v1/auth/login` - Autenticación
+- `GET /api/v1/companies` - Listar empresas
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+La URL base se configura mediante `REACT_APP_API_URL`.
+
+## 📝 Próximos Pasos
+
+- Agregar vista de detalle de empresa
+- Implementar gestión de productos
+- Agregar vista de inventario
+- Mejorar manejo de errores
+- Agregar loading states
+- Implementar paginación
+
+## 🧪 Testing
+
+```bash
+npm test
+```
+
+## 🏗️ Build
+
+```bash
+npm run build
+```
