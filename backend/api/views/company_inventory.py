@@ -6,14 +6,20 @@ Implements endpoints for inventory management per company:
 - GET /companies/{nit}/inventory/pdf/ - Download PDF for company inventory
 - POST /companies/{nit}/inventory/send-email/ - Send PDF by email
 """
+from infrastructure.domain_loader import ensure_domain_in_path
+ensure_domain_in_path()
+
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.http import HttpResponse
 
+from domain.exceptions.errors import InvalidInventoryError, InvalidCompanyError, InvalidProductError
+
 from api.permissions import IsAdministratorOrReadOnly
 from api.serializers.inventory import SendEmailSerializer, CreateInventorySerializer
+from application.use_cases import AddInventoryUseCase
 from infrastructure.models import InventoryItem, Company, Product
 from application.services import PDFGeneratorService, EmailService, AIRecommendationsService
 
@@ -108,49 +114,62 @@ def company_inventory_list_view(request, nit):
     product_code = serializer.validated_data['product_code']
     quantity = serializer.validated_data['quantity']
     
-    # Validate product exists
-    try:
-        product = Product.objects.get(code=product_code)
-    except Product.DoesNotExist:
-        return Response(
-            {'detail': 'Product not found'},
-            status=status.HTTP_404_NOT_FOUND
-        )
-    
-    # Validate product belongs to the company
-    if product.company.nit != company.nit:
-        return Response(
-            {'detail': 'Product does not belong to this company'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    # Check if inventory item already exists
-    if InventoryItem.objects.filter(company=company, product=product).exists():
+    # Check if inventory item already exists (for POST/create, we don't allow duplicates)
+    if InventoryItem.objects.filter(company__nit=nit, product__code=product_code).exists():
         return Response(
             {'detail': 'Inventory item already exists for this product and company'},
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    # Create inventory item
-    inventory_item = InventoryItem.objects.create(
-        company=company,
-        product=product,
-        quantity=quantity
-    )
-    
-    logger.info(f"Inventory item created: {company.nit} - {product.code} - Quantity: {quantity}")
-    
-    # Return response in the same format as the list endpoint
-    return Response(
-        {
-            'product_code': inventory_item.product.code,
-            'product_name': inventory_item.product.name,
-            'quantity': inventory_item.quantity,
-            'prices': inventory_item.product.prices,
-            'updated_at': inventory_item.updated_at.isoformat()
-        },
-        status=status.HTTP_201_CREATED
-    )
+    try:
+        # Use domain-driven use case for inventory management
+        use_case = AddInventoryUseCase()
+        inventory_item = use_case.execute(
+            company_nit=nit,
+            product_code=product_code,
+            quantity=quantity
+        )
+        
+        logger.info(f"Inventory item created: {nit} - {product_code} - Quantity: {quantity}")
+        
+        # Return response in the same format as the list endpoint
+        return Response(
+            {
+                'product_code': inventory_item.product.code,
+                'product_name': inventory_item.product.name,
+                'quantity': inventory_item.quantity,
+                'prices': inventory_item.product.prices,
+                'updated_at': inventory_item.updated_at.isoformat()
+            },
+            status=status.HTTP_201_CREATED
+        )
+    except InvalidCompanyError as e:
+        return Response(
+            {'detail': str(e)},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except InvalidProductError as e:
+        # Distinguish between product not existing vs. product not belonging to company
+        error_msg = str(e)
+        # Check if product exists at all to determine appropriate status code
+        try:
+            Product.objects.get(code=product_code)
+            # Product exists but doesn't belong to this company
+            return Response(
+                {'detail': 'Product does not belong to this company'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Product.DoesNotExist:
+            # Product doesn't exist at all
+            return Response(
+                {'detail': 'Product not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+    except InvalidInventoryError as e:
+        return Response(
+            {'detail': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 @api_view(['GET'])
