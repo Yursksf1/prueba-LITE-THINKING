@@ -84,4 +84,16 @@ export const companyService = {
   }
 };
 
+export const productService = {
+  getByCompany: async (nit) => {
+    const response = await api.get(`/companies/${nit}/products/`);
+    return response.data;
+  },
+  
+  create: async (nit, productData) => {
+    const response = await api.post(`/companies/${nit}/products/`, productData);
+    return response.data;
+  }
+};
+
 export default api;
