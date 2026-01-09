@@ -85,16 +85,29 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB"),
-        "USER": os.getenv("POSTGRES_USER"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
-        "HOST": os.getenv("POSTGRES_HOST"),
-        "PORT": os.getenv("POSTGRES_PORT"),
+# Use SQLite for tests, PostgreSQL for development/production
+import sys
+# Detect test environment using multiple signals
+TESTING = 'test' in sys.argv or 'pytest' in sys.modules or os.environ.get('TESTING', 'False') == 'True'
+
+if TESTING:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("POSTGRES_DB"),
+            "USER": os.getenv("POSTGRES_USER"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+            "HOST": os.getenv("POSTGRES_HOST"),
+            "PORT": os.getenv("POSTGRES_PORT"),
+        }
+    }
 
 
 # Password validation
@@ -169,7 +182,16 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-]
 CORS_ALLOW_CREDENTIALS = True
+
+# Email Configuration
+# For development, use console backend to print emails to console
+# In production, configure SMTP or use external service (SendGrid, AWS SES, etc.)
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'localhost')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '25'))
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'False') == 'True'
+EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False') == 'True'
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@example.com')
