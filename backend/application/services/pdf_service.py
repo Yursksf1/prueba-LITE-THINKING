@@ -10,7 +10,7 @@ from typing import List, Optional
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
@@ -234,7 +234,6 @@ class PDFGeneratorService:
             elements.append(recommendations_title)
             
             # Add a separator line
-            from reportlab.platypus import HRFlowable
             line = HRFlowable(
                 width="100%",
                 thickness=1,
